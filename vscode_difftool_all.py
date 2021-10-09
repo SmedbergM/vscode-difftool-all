@@ -15,11 +15,16 @@ def parse_args():
 def list_paths(args):
     cmd = ["git", "diff", "--name-only"] + [args.left, args.right]
     cmd = list(filter(None, cmd))
-    p = subprocess.run(cmd, check=True, text=True, capture_output=True)
-    for line in p.stdout.split("\n"):
-        s = line.strip()
-        if s:
-            yield s
+    with subprocess.Popen(cmd, text=True, stdout=subprocess.PIPE) as p:
+        for line in p.stdout:
+            s = line.strip()
+            if s:
+                yield s
+
+    if p.returncode != 0:
+        # The context manager waits until the process is complete, so returncode should not be None
+        msg = "{} returned status {}".format(" ".join(cmd), p.returncode)
+        raise subprocess.SubprocessError(msg)
 
 def main(args):
     tmp = tempfile.mkdtemp(prefix="difftool-")
