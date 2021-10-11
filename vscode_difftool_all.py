@@ -35,17 +35,21 @@ def list_paths(args):
 def main(args):
     tmp = tempfile.mkdtemp(prefix="difftool-")
     print(f"To clean up workspace, run\n    rm -rf {tmp}")
+    # It would be preferable to open up the temp directory itself as the
+    # workspace of the VSCode instance; however, that produces the Big
+    # Annoying "Do you trust the authors of the files in this folder?" modal
+    # unless the user has trusted /tmp, which is a bad idea.
 
     def difftool(path, reuse_window):
-        (rd, b) = os.path.split(path)
-        abs_d = os.path.join(tmp, rd)
-        os.makedirs(abs_d, exist_ok=True)
-        left_path = os.path.join(abs_d, f"{args.left}.{b}")
+        (relative_dir, basename) = os.path.split(path)
+        absolute_dir = os.path.join(tmp, relative_dir)
+        os.makedirs(absolute_dir, exist_ok=True)
+        left_path = os.path.join(absolute_dir, f"{args.left}.{basename}")
         with open(left_path, "w") as left:
             cmd = ["git", "show", f"{args.left}:{path}"]
             subprocess.run(cmd, check=False, stdout=left, stderr=subprocess.DEVNULL)
         if args.right:
-            right_path = os.path.join(abs_d, f"{args.right}.{b}")
+            right_path = os.path.join(absolute_dir, f"{args.right}.{basename}")
             with open(right_path, "w") as right:
                 cmd = ["git", "show", f"{args.right}:{path}"]
                 subprocess.run(cmd, check=True, stdout=right)
