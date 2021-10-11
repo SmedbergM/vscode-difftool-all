@@ -8,21 +8,27 @@ import tempfile
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("left")
-    parser.add_argument("right", nargs="?")
+    parser.add_argument("left", type=rev_parse)
+    parser.add_argument("right", nargs="?", type=rev_parse)
     return parser.parse_args()
+
+def rev_parse(rev):
+    cmd = ["git", "rev-parse", "--short", rev]
+    p = subprocess.run(cmd, check=True, text=True, capture_output=True)
+    return p.stdout.strip()
 
 def list_paths(args):
     cmd = ["git", "diff", "--name-only"] + [args.left, args.right]
-    cmd = list(filter(None, cmd))
+    cmd = list(filter(bool, cmd))
     with subprocess.Popen(cmd, text=True, stdout=subprocess.PIPE) as p:
         for line in p.stdout:
             s = line.strip()
             if s:
                 yield s
 
-    if p.returncode != 0:
-        # The context manager waits until the process is complete, so returncode should not be None
+    if p.returncode:
+        # The context manager waits until the process is complete, so
+        # returncode should not be None
         msg = "{} returned status {}".format(" ".join(cmd), p.returncode)
         raise subprocess.SubprocessError(msg)
 
@@ -54,6 +60,7 @@ def main(args):
             left_path, right_path
         ]
         subprocess.run(cmd, check=True)
+
     for (idx, path) in enumerate(list_paths(args)):
         difftool(path, idx)
 
