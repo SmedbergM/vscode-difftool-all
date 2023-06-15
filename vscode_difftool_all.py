@@ -12,7 +12,7 @@ class Args:
     right: Optional[str]
     exclude: set[str]
 
-    def __init__(self, left: str, right: Optional[str], exclude: Optional[list[str]]):
+    def __init__(self, left: str, right: Optional[str] = None, exclude: Optional[list[str]] = None):
         self.left = left
         self.right = right
         self.exclude = set(exclude or [])
@@ -45,7 +45,7 @@ def list_paths(args: Args):
         msg = "{} returned status {}".format(" ".join(cmd), p.returncode)
         raise subprocess.SubprocessError(msg)
 
-def main(args):
+def main(args: Args):
     tmp = tempfile.mkdtemp(prefix="difftool-")
     print(f"To clean up workspace, run\n    rm -rf {tmp}")
     # It would be preferable to open up the temp directory itself as the
