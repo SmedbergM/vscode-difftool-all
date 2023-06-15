@@ -5,25 +5,38 @@ import os
 import os.path
 import subprocess
 import tempfile
+from typing import Optional
 
-def parse_args():
+class Args:
+    left: str
+    right: Optional[str]
+    exclude: set[str]
+
+    def __init__(self, left: str, right: Optional[str], exclude: Optional[list[str]]):
+        self.left = left
+        self.right = right
+        self.exclude = set(exclude or [])
+
+
+def parse_args() -> Args:
     parser = argparse.ArgumentParser()
     parser.add_argument("left", type=rev_parse)
     parser.add_argument("right", nargs="?", type=rev_parse)
-    return parser.parse_args()
+    parser.add_argument("--exclude", "-e", nargs="*")
+    return Args(**vars(parser.parse_args()))
 
 def rev_parse(rev):
     cmd = ["git", "rev-parse", "--short", rev]
     p = subprocess.run(cmd, check=True, text=True, capture_output=True)
     return p.stdout.strip()
 
-def list_paths(args):
+def list_paths(args: Args):
     cmd = ["git", "diff", "--name-only"] + [args.left, args.right]
     cmd = list(filter(bool, cmd))
     with subprocess.Popen(cmd, text=True, stdout=subprocess.PIPE) as p:
         for line in p.stdout:
             s = line.strip()
-            if s:
+            if s and s not in args.exclude:
                 yield s
 
     if p.returncode:
